@@ -14,6 +14,9 @@
 - Use Node.js 24, pnpm, TypeScript, Next.js Node route handlers, Drizzle and PostgreSQL.
 - Keep UI, shared validation, domain logic, database/storage, and browser cryptography separate.
 - Use `pnpm check`, `pnpm test`, `pnpm test:integration`, `pnpm test:e2e`, and `pnpm build` as release gates. Domain/security coverage must reach 90% lines and 85% branches.
+- Run browser tests through `pnpm test:e2e`; its supervisor owns PostgreSQL outside Playwright's web-server tree. Do not force-kill local PostgreSQL workers on Windows. Use the launcher's graceful pg_ctl shutdown.
+- Stop the development server before production builds or browser tests because they share Next.js build output. `pnpm typecheck` generates route types first; keep generated `next-env.d.ts` untracked.
+- Keep the production build privacy guard enabled. Runtime payload/database directories must never be included in standalone output or Docker build context.
 - Every documented behavior needs a behavioral test; critical security and concurrency failures need explicit regressions. Record actual command results in docs/ROADMAP.md.
 - Never send decryption keys or unencrypted drop metadata to the server. Do not add third-party scripts to recipient pages.
 - Store only hashes of management capabilities/passwords. Never log request bodies, Authorization headers, full private URLs, or raw IP addresses.

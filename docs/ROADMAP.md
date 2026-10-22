@@ -53,10 +53,12 @@ Evidence: 11 production-browser tests pass, including opt-in history/forget/clea
 - [x] Formatting, lint, types, unit/integration/browser suite, production build pass.
 - [x] Domain/security coverage: >=90% lines, >=85% branches.
 - [x] Docker/Compose, health checks, backup/restore and deployment runbook prepared.
-- [ ] Container build/smoke verified in CI.
-- [ ] Milestone branches committed, pushed and integrated after checks.
+- [x] Container build/smoke verified in CI.
+- [x] Milestone branches committed, pushed and integrated after checks.
 
-Local release evidence (2026-10-22): 54 unit/component tests, 14 PostgreSQL integration tests, and 11 production Chromium journeys pass. Measured domain/security coverage: 97.72% lines, 96.07% branches. The production build passes a guard excluding local data, Git metadata, test artifacts and secrets. Container execution is pending the GitHub Actions container job; Docker is not installed on this computer.
+Release evidence (2026-10-22): 54 unit/component tests, 14 PostgreSQL integration tests, and 11 production Chromium journeys pass locally and in Linux CI. Measured domain/security coverage: 97.72% lines, 96.07% branches. The production build passes a guard excluding local data, Git metadata, test artifacts and secrets. [Final CI run](https://github.com/Reza-HM/URL_Shortener/actions/runs/39838900562) passed both verification and Docker build/lifecycle jobs on source commit `b800624`. Container health, migrations, cleanup process, creation, redirect and deletion were verified in CI because Docker is not installed on this computer. The checked release was fast-forwarded and pushed to `main`; deployment remains deferred.
+
+Development-mode QA: the local workspace retained entered text without refreshes after restricting CSS scanning to application source. Verification servers were shut down gracefully and local development data was preserved.
 
 ## M7 — Deployment (deferred)
 
