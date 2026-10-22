@@ -58,7 +58,7 @@ jobs:
       - name: Apply migrations
         run: docker compose run --rm --no-deps migrate
       - name: Start application and cleanup
-        run: docker compose up -d --no-deps --wait --wait-timeout 120 app cleanup
+        run: docker compose up -d --no-deps app cleanup
       - name: Health and lifecycle smoke
         run: node scripts/container-smoke.mjs
       - name: Startup diagnostics

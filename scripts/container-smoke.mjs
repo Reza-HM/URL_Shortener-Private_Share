@@ -1,6 +1,26 @@
+import { execFileSync } from "node:child_process";
 const origin = process.env.APP_ORIGIN || "http://localhost:3000";
-const health = await fetch(`${origin}/api/health`);
-if (!health.ok) throw new Error("Container health failed");
+let healthy = false;
+for (let attempt = 0; attempt < 60; attempt++) {
+  try {
+    healthy = (
+      await fetch(`${origin}/api/health`, { signal: AbortSignal.timeout(3000) })
+    ).ok;
+  } catch {
+    /* Startup is still in progress. */
+  }
+  if (healthy) break;
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+}
+if (!healthy) throw new Error("Container health did not become ready");
+if (
+  !execFileSync(
+    "docker",
+    ["compose", "ps", "--status", "running", "-q", "cleanup"],
+    { encoding: "utf8" },
+  ).trim()
+)
+  throw new Error("Cleanup service is not running");
 const create = await fetch(`${origin}/api/v1/links`, {
   method: "POST",
   headers: { Origin: origin, "Content-Type": "application/json" },
