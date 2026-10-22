@@ -19,7 +19,6 @@ if (testing) {
   process.env.RATE_LIMIT_SECRET = "relay-e2e-secret-kept-out-of-production";
 }
 if (production) {
-  process.env.NODE_ENV = "production";
   process.env.HOSTNAME = "localhost";
   process.env.PORT = testing ? "3100" : "3000";
   await cp(
@@ -46,7 +45,14 @@ const child = spawn(
         "--port",
         testing ? "3100" : "3000",
       ],
-  { stdio: "inherit", env: process.env, windowsHide: true },
+  {
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      NODE_ENV: production ? "production" : "development",
+    },
+    windowsHide: true,
+  },
 );
 let busy = false,
   stopping = false;

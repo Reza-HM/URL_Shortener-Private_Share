@@ -8,16 +8,42 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import QRCode from "qrcode";
 import {
   CopyButton,
   ConfirmButton,
   ErrorMessage,
+  QRButton,
 } from "../../src/components/common";
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
 });
 describe("shared interaction components", () => {
+  it("generates private QR codes locally with the complete fragment", async () => {
+    const create = vi
+      .spyOn(QRCode, "toDataURL")
+      .mockImplementation(() => Promise.resolve("data:image/png;base64,AA=="));
+    const url = "https://relay.example/d/id#key=private";
+    render(<QRButton url={url} />);
+    fireEvent.click(screen.getByRole("button", { name: "QR code" }));
+    await screen.findByRole("img", { name: "QR code for this share" });
+    expect(create).toHaveBeenCalledWith(
+      url,
+      expect.objectContaining({ errorCorrectionLevel: "M" }),
+    );
+    expect(
+      screen.getByRole("link", { name: "Download QR code" }),
+    ).toHaveAttribute("download", "relay-share.png");
+  });
+  it("offers copying when a link is too long for QR encoding", async () => {
+    vi.spyOn(QRCode, "toDataURL").mockRejectedValue(new Error("too long"));
+    render(<QRButton url="long-link" />);
+    fireEvent.click(screen.getByRole("button", { name: "QR code" }));
+    await expect(screen.findByRole("alert")).resolves.toHaveTextContent(
+      "Copy the link instead",
+    );
+  });
   it("copies the complete link including the encryption fragment", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {

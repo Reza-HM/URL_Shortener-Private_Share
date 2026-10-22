@@ -20,7 +20,10 @@ export function config() {
   return {
     origin,
     maxFileBytes,
-    storageDir: path.resolve(process.env.STORAGE_DIR || ".local/payloads"),
+    // Runtime data must never be traced into the standalone application image.
+    storageDir: path.resolve(
+      /* turbopackIgnore: true */ process.env.STORAGE_DIR || ".local/payloads",
+    ),
     rateSecret:
       process.env.RATE_LIMIT_SECRET ||
       "relay-local-development-not-for-production",

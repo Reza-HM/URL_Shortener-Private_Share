@@ -2,6 +2,16 @@ import type { NextConfig } from "next";
 
 const config: NextConfig = {
   output: "standalone",
+  outputFileTracingExcludes: {
+    "/*": [
+      "./.local/**/*",
+      "./.git/**/*",
+      "./.env*",
+      "./coverage/**/*",
+      "./test-results/**/*",
+      "./playwright-report/**/*",
+    ],
+  },
   serverExternalPackages: ["pg", "@node-rs/argon2"],
   poweredByHeader: false,
   async headers() {

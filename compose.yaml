@@ -1,0 +1,60 @@
+name: relay
+x-relay-environment: &relay-environment
+  NODE_ENV: production
+  DATABASE_URL: postgresql://relay:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/relay
+  APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
+  STORAGE_DIR: /app/data/payloads
+  MAX_FILE_BYTES: ${MAX_FILE_BYTES:-26214400}
+  RATE_LIMIT_SECRET: ${RATE_LIMIT_SECRET:?Set RATE_LIMIT_SECRET to at least 32 random characters}
+  TRUST_PROXY: ${TRUST_PROXY:-0}
+services:
+  db:
+    image: postgres:18-bookworm
+    environment:
+      POSTGRES_USER: relay
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: relay
+    volumes:
+      - database:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U relay -d relay"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+  migrate:
+    build: .
+    image: relay:local
+    command: ["node", "node_modules/tsx/dist/cli.mjs", "scripts/migrate.ts"]
+    environment: *relay-environment
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+  app:
+    image: relay:local
+    build: .
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment: *relay-environment
+    volumes:
+      - payloads:/app/data/payloads
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+  cleanup:
+    image: relay:local
+    command: ["node", "node_modules/tsx/dist/cli.mjs", "scripts/cleanup.ts"]
+    environment: *relay-environment
+    volumes:
+      - payloads:/app/data/payloads
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+volumes:
+  database:
+  payloads:

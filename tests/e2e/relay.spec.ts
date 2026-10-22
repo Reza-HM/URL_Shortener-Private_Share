@@ -91,12 +91,14 @@ test("short link creation, preview, QR, management and disable", async ({
     page.getByText("Your short link", { exact: true }),
   ).toBeVisible();
   await page.getByRole("link", { name: "Preview destination" }).click();
+  await expect(page).toHaveURL(new RegExp(`/preview/${alias}$`));
   await expect(
     page.getByText("https://example.com/path?hello=world#section", {
       exact: true,
     }),
   ).toBeVisible();
   await page.goBack();
+  await expect(page).toHaveURL(/\/manage\/.+#token=/);
   await page.getByRole("button", { name: "Disable link", exact: true }).click();
   await page
     .getByRole("dialog")
@@ -229,6 +231,26 @@ test("history is opt-in, persists in this browser and can be forgotten", async (
 }) => {
   await makeText(page, "not remembered");
   await page.getByRole("link", { name: "My shares", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "A fresh start." }),
+  ).toBeVisible();
+  await makeText(page, "clear-history-only", { remember: true });
+  await page.getByRole("link", { name: "My shares", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Clear history", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Keep it", exact: true })
+    .click();
+  await expect(page.getByText("Text drop", { exact: true })).toBeVisible();
+  await page
+    .getByRole("button", { name: "Clear history", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Clear history", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "A fresh start." }),
   ).toBeVisible();

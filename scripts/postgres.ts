@@ -27,11 +27,14 @@ export async function startPostgres(mode: "dev" | "integration" | "e2e") {
   let password: string;
   try {
     password = await readFile(secretPath, "utf8");
-  } catch {
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     password = randomBytes(24).toString("hex");
-    await writeFile(secretPath, password, { mode: 0o600 });
+    await writeFile(secretPath, password, { mode: 0o600, flag: "wx" });
   }
   const databaseDir = path.join(root, "postgres");
+  let starting = true;
+  const startupMessages: string[] = [];
   const postgres = new EmbeddedPostgres({
     databaseDir,
     user: "relay",
@@ -41,7 +44,9 @@ export async function startPostgres(mode: "dev" | "integration" | "e2e") {
     authMethod: "scram-sha-256",
     postgresFlags: ["-h", "127.0.0.1"],
     createPostgresUser: false,
-    onLog: () => {},
+    onLog: (message: string) => {
+      if (starting) startupMessages.push(message);
+    },
     onError: () => {},
   });
   try {
@@ -85,10 +90,11 @@ export async function startPostgres(mode: "dev" | "integration" | "e2e") {
       await postgres.start();
     } catch {
       throw new Error(
-        `Local PostgreSQL could not start on port ${port}. Check for another process using it.`,
+        `Local PostgreSQL could not start on port ${port}. ${startupMessages.join("").slice(-1800)}`,
       );
     }
   }
+  starting = false;
   const client = postgres.getPgClient("postgres", "127.0.0.1");
   await client.connect();
   if (

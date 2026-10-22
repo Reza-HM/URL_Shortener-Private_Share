@@ -306,4 +306,14 @@ describe("PostgreSQL sharing lifecycle", () => {
     );
     await expect(consumeRateLimit("test", 3, 60000)).resolves.toBeUndefined();
   });
+  it("skips cleanup when another worker owns the advisory lock", async () => {
+    const owner = await pool().connect();
+    try {
+      await owner.query("SELECT pg_advisory_lock(730922)");
+      expect(await cleanup()).toEqual({ purged: 0, failed: 0 });
+    } finally {
+      await owner.query("SELECT pg_advisory_unlock(730922)");
+      owner.release();
+    }
+  });
 });

@@ -9,12 +9,12 @@ export async function cleanup(
   const connection = await pool().connect();
   let purged = 0,
     failed = 0;
+  let locked = false;
   try {
-    if (
-      !(await connection.query("SELECT pg_try_advisory_lock(730922) AS locked"))
-        .rows[0].locked
-    )
-      return { purged, failed };
+    locked = (
+      await connection.query("SELECT pg_try_advisory_lock(730922) AS locked")
+    ).rows[0].locked;
+    if (!locked) return { purged, failed };
     const result = await connection.query<{ id: string; storage_key: string }>(
       "SELECT id, storage_key FROM shares WHERE kind='drop' AND purged_at IS NULL AND (expires_at <= $1 OR consumed_at IS NOT NULL OR deleted_at IS NOT NULL) LIMIT 100",
       [now],
@@ -56,7 +56,10 @@ export async function cleanup(
     ]);
     return { purged, failed };
   } finally {
-    await connection.query("SELECT pg_advisory_unlock(730922)");
-    connection.release();
+    try {
+      if (locked) await connection.query("SELECT pg_advisory_unlock(730922)");
+    } finally {
+      connection.release();
+    }
   }
 }
